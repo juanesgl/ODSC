@@ -30,7 +30,7 @@ GlobalLoop, Load Count
             Input
             Store ValF      
 
-            / --- 1. CALCULATE DetSys (32 bits) ---
+            / --- 1. CALCULATE DetSys ---
             Load ValA
             Store M_Op1
             Load ValE
@@ -314,7 +314,7 @@ Mod_Cont,   Store M_Rem     / Save subtraction
 
 
 / ==========================================================
-/ 32-BIT MATH SUBROUTINES (FROM PREVIOUS PROJECT)
+/ MATH SUBROUTINES
 / ==========================================================
 BigMult,    HEX 0
             Load Zero
