@@ -1,0 +1,556 @@
+/ Final Project: Cramer 32-bits + Prime and Coprime Analysis
+/ Output: 
+/ Line 1: X
+/ Line 2: Y
+/ Line 3: Number of Primes (0, 1 or 2)
+/ Line 4: Are they Coprime? (1=Yes, 0=No)
+
+ORG 100
+
+Start,      Input           
+            Store Count
+            
+GlobalLoop, Load Count
+            Skipcond 800    
+            Jump HaltProg   
+            Subt One
+            Store Count
+
+            / --- READ DATA ---
+            Input
+            Store ValA
+            Input
+            Store ValB
+            Input
+            Store ValC      
+            Input
+            Store ValD
+            Input
+            Store ValE
+            Input
+            Store ValF      
+
+            / --- 1. CALCULATE DetSys (32 bits) ---
+            Load ValA
+            Store M_Op1
+            Load ValE
+            Store M_Op2
+            Jns BigMult     
+            Load Res_Hi
+            Store T1_Hi
+            Load Res_Lo
+            Store T1_Lo
+            Load M_Sign
+            Store T1_Sgn
+
+            Load ValB
+            Store M_Op1
+            Load ValD
+            Store M_Op2
+            Jns BigMult
+            Load Res_Hi
+            Store T2_Hi
+            Load Res_Lo
+            Store T2_Lo
+            Load M_Sign
+            Store T2_Sgn
+
+            Jns BigSubt
+            Load Res_Hi
+            Store D_Sys_H
+            Load Res_Lo
+            Store D_Sys_L
+            Load Res_Sgn
+            Store D_Sys_S
+
+            / --- 2. CALCULATE DetX ---
+            Load ValC
+            Store M_Op1
+            Load ValE
+            Store M_Op2
+            Jns BigMult
+            Load Res_Hi
+            Store T1_Hi
+            Load Res_Lo
+            Store T1_Lo
+            Load M_Sign
+            Store T1_Sgn
+
+            Load ValB
+            Store M_Op1
+            Load ValF
+            Store M_Op2
+            Jns BigMult
+            Load Res_Hi
+            Store T2_Hi
+            Load Res_Lo
+            Store T2_Lo
+            Load M_Sign
+            Store T2_Sgn
+
+            Jns BigSubt
+            Load Res_Hi
+            Store D_X_H
+            Load Res_Lo
+            Store D_X_L
+            Load Res_Sgn
+            Store D_X_S
+
+            / --- 3. CALCULATE DetY ---
+            Load ValA
+            Store M_Op1
+            Load ValF
+            Store M_Op2
+            Jns BigMult
+            Load Res_Hi
+            Store T1_Hi
+            Load Res_Lo
+            Store T1_Lo
+            Load M_Sign
+            Store T1_Sgn
+
+            Load ValC
+            Store M_Op1
+            Load ValD
+            Store M_Op2
+            Jns BigMult
+            Load Res_Hi
+            Store T2_Hi
+            Load Res_Lo
+            Store T2_Lo
+            Load M_Sign
+            Store T2_Sgn
+
+            Jns BigSubt
+            Load Res_Hi
+            Store D_Y_H
+            Load Res_Lo
+            Store D_Y_L
+            Load Res_Sgn
+            Store D_Y_S
+
+            / --- SOLUTION X ---
+            Load D_X_H
+            Store Div_NumH
+            Load D_X_L
+            Store Div_NumL
+            Load D_X_S
+            Store Div_NumS
+            Load D_Sys_H
+            Store Div_DenH
+            Load D_Sys_L
+            Store Div_DenL
+            Load D_Sys_S
+            Store Div_DenS
+            
+            Jns BigDiv      
+            Output          / PRINT X
+            
+            / SAVE X FOR PART 2
+            Load Div_Quot   / The calculated absolute value
+            Store Abs_X
+            Load Div_FinalS / The calculated sign
+            Store Sign_X
+
+            / --- SOLUTION Y ---
+            Load D_Y_H
+            Store Div_NumH
+            Load D_Y_L
+            Store Div_NumL
+            Load D_Y_S
+            Store Div_NumS
+            
+            Jns BigDiv
+            Output          / PRINT Y
+
+            / SAVE Y FOR PART 2
+            Load Div_Quot
+            Store Abs_Y
+            Load Div_FinalS
+            Store Sign_Y
+
+            / ===========================================
+            / PART 2: PRIME AND COPRIME ANALYSIS
+            / ===========================================
+
+            / --- A. COUNT PRIMES ---
+            Load Zero
+            Store PrimeCnt  / Reset counter
+
+            / Check X
+            Load Abs_X
+            Store P_Val
+            Load Sign_X
+            Store P_Sign
+            Jns CheckPrime  / Call Subroutine
+            Load PrimeCnt
+            Add P_Res       / Add result (0 or 1)
+            Store PrimeCnt
+
+            / Check Y
+            Load Abs_Y
+            Store P_Val
+            Load Sign_Y
+            Store P_Sign
+            Jns CheckPrime
+            Load PrimeCnt
+            Add P_Res
+            Store PrimeCnt
+
+            / Print Number of Primes
+            Load PrimeCnt
+            Output          / LINE 3
+
+            / --- B. CHECK COPRIME (GCD == 1) ---
+            Load Abs_X
+            Store G_A
+            Load Abs_Y
+            Store G_B
+            Jns CalcGCD     / Calculate GCD
+            
+            / Verify if GCD is 1
+            Load G_A        / Result remains in G_A
+            Subt One
+            Skipcond 400    / If (GCD - 1) == 0
+            Jump NotCopr
+            Load One        / Is 1 -> They are Coprime
+            Output          / LINE 4
+            Jump EndLoop
+
+NotCopr,    Load Zero       / Not 1 -> Not Coprime
+            Output          / LINE 4
+
+EndLoop,    Jump GlobalLoop
+
+HaltProg,   Halt
+
+
+/ ==========================================================
+/ SUBROUTINE: CHECKPRIME
+/ Input: P_Val, P_Sign. Output: P_Res (1 if Prime, 0 if not)
+/ ==========================================================
+CheckPrime, HEX 0
+            Load Zero
+            Store P_Res     / Assume not prime
+
+            / 1. If negative, not prime
+            Load P_Sign
+            Skipcond 400    / If Sign is 0 (Positive)
+            JumpI CheckPrime / Is negative, return 0
+
+            / 2. If value < 2, not prime
+            Load P_Val
+            Subt Two
+            Skipcond 000    / If (Val-2) < 0 -> Val is 0 or 1
+            Jump P_Start
+            JumpI CheckPrime
+
+P_Start,    Load Two
+            Store P_Iter    / i = 2
+
+P_Loop,     Load P_Val
+            Subt P_Iter
+            Skipcond 800    / If Val > i, continue
+            Jump IsPrime    / If Val == i, we found no divisors
+
+            / Check divisibility: Val % i
+            Load P_Val
+            Store M_Num
+            Load P_Iter
+            Store M_Den
+            Jns Modulo      / M_Rem = Val % i
+            
+            Load M_Rem
+            Skipcond 400    / If Remainder == 0
+            Jump NextIter   / Not divisible, try next i
+            JumpI CheckPrime / Divisible! Not prime, return 0
+
+NextIter,   Load P_Iter
+            Add One
+            Store P_Iter
+            Jump P_Loop
+
+IsPrime,    Load One
+            Store P_Res
+            JumpI CheckPrime
+
+/ ==========================================================
+/ SUBROUTINE: CALC_GCD (Euclidean Algorithm)
+/ Input: G_A, G_B. Output: G_A (The GCD)
+/ ==========================================================
+CalcGCD,    HEX 0
+GCD_Loop,   Load G_B
+            Skipcond 400    / If B == 0, we're done
+            Jump DoGCD
+            JumpI CalcGCD   / Return G_A
+
+DoGCD,      Load G_A
+            Store M_Num
+            Load G_B
+            Store M_Den
+            Jns Modulo      / M_Rem = A % B
+            
+            Load G_B
+            Store G_A       / A = previous B
+            Load M_Rem
+            Store G_B       / B = Remainder
+            Jump GCD_Loop
+
+
+/ ==========================================================
+/ SUBROUTINE: MODULO (M_Num % M_Den)
+/ Output: M_Rem
+/ ==========================================================
+Modulo,     HEX 0
+            Load M_Num
+            Store M_Rem
+Mod_L,      Load M_Rem
+            Subt M_Den
+            Skipcond 000    / If negative, stop
+            Jump Mod_Cont
+            JumpI Modulo    / Return
+Mod_Cont,   Store M_Rem     / Save subtraction
+            Jump Mod_L
+
+
+/ ==========================================================
+/ 32-BIT MATH SUBROUTINES (FROM PREVIOUS PROJECT)
+/ ==========================================================
+BigMult,    HEX 0
+            Load Zero
+            Store Res_Hi
+            Store Res_Lo
+            Store M_Sign    
+            Load M_Op1
+            Skipcond 000    
+            Jump ChkOp2
+            Load Zero       
+            Subt M_Op1
+            Store M_Op1
+            Load One        
+            Store M_Sign
+ChkOp2,     Load M_Op2
+            Skipcond 000
+            Jump DoMult
+            Load Zero       
+            Subt M_Op2
+            Store M_Op2
+            Load M_Sign     
+            Subt One
+            Skipcond 400    
+            Jump SetS1
+            Load Zero
+            Store M_Sign
+            Jump DoMult
+SetS1,      Load One
+            Store M_Sign
+DoMult,     Load M_Op2      
+            Skipcond 800
+            Jump EndMult
+            Subt One
+            Store M_Op2
+            Load Res_Lo
+            Add M_Op1
+            Store Res_Lo
+            Subt Base
+            Skipcond 000    
+            Jump CarryUp
+            Jump DoMult
+CarryUp,    Store Res_Lo    
+            Load Res_Hi
+            Add One
+            Store Res_Hi
+            Jump DoMult
+EndMult,    JumpI BigMult
+
+BigSubt,    HEX 0
+            Load T1_Sgn
+            Subt T2_Sgn
+            Skipcond 400    
+            Jump DiffSgn    
+            Load T1_Hi
+            Subt T2_Hi
+            Skipcond 400    
+            Jump ChkHi      
+            Load T1_Lo
+            Subt T2_Lo
+            Skipcond 000    
+            Jump T1_Big     
+            Jump T2_Big     
+ChkHi,      Skipcond 000    
+            Jump T1_Big
+            Jump T2_Big
+DiffSgn,    Load T1_Sgn
+            Store Res_Sgn
+            Load T1_Lo
+            Add T2_Lo
+            Store Res_Lo
+            Subt Base       
+            Skipcond 000
+            Jump AddCarry
+            Load Res_Lo     
+            Jump AddHi
+AddCarry,   Store Res_Lo    
+            Load T1_Hi
+            Add One         
+            Store T1_Hi
+AddHi,      Load T1_Hi
+            Add T2_Hi
+            Store Res_Hi
+            JumpI BigSubt
+T1_Big,     Load T1_Sgn
+            Store Res_Sgn
+            Load T1_Lo
+            Subt T2_Lo
+            Skipcond 000    
+            Jump NoBorrow
+            Add Base        
+            Store Res_Lo
+            Load T1_Hi
+            Subt One        
+            Store T1_Hi
+            Jump SubHi
+NoBorrow,   Store Res_Lo
+SubHi,      Load T1_Hi
+            Subt T2_Hi
+            Store Res_Hi
+            JumpI BigSubt
+T2_Big,     Load T1_Sgn     
+            Skipcond 400    
+            Jump MakePos    
+            Load One        
+            Store Res_Sgn
+            Jump DoRevSub
+MakePos,    Load Zero
+            Store Res_Sgn
+DoRevSub,   Load T2_Lo
+            Subt T1_Lo
+            Skipcond 000
+            Jump NoBorr2
+            Add Base
+            Store Res_Lo
+            Load T2_Hi
+            Subt One
+            Store T2_Hi
+            Jump SubHi2
+NoBorr2,    Store Res_Lo
+SubHi2,     Load T2_Hi
+            Subt T1_Hi
+            Store Res_Hi
+            JumpI BigSubt
+
+BigDiv,     HEX 0
+            Load Zero
+            Store Div_Quot
+            Load Div_NumS
+            Subt Div_DenS
+            Skipcond 400    
+            Jump ResNeg
+            Load Zero
+            Store Div_FinalS
+            Jump LoopDiv
+ResNeg,     Load One
+            Store Div_FinalS
+LoopDiv,    Load Div_NumH
+            Subt Div_DenH
+            Skipcond 000    
+            Jump CheckLo
+            Jump EndDiv     
+CheckLo,    Skipcond 800    
+            Jump EqualHi    
+            Jump DoSub      
+EqualHi,    Load Div_NumL
+            Subt Div_DenL
+            Skipcond 000    
+            Jump DoSub
+            Jump EndDiv
+DoSub,      Load Div_NumL
+            Subt Div_DenL
+            Skipcond 000
+            Jump DivNoBorr
+            Add Base        
+            Store Div_NumL
+            Load Div_NumH
+            Subt One
+            Store Div_NumH
+            Jump DivSubHi
+DivNoBorr,  Store Div_NumL
+DivSubHi,   Load Div_NumH
+            Subt Div_DenH
+            Store Div_NumH
+            Load Div_Quot
+            Add One
+            Store Div_Quot
+            Jump LoopDiv
+EndDiv,     Load Div_FinalS
+            Skipcond 800    
+            Jump RetPos
+            Load Zero
+            Subt Div_Quot   
+            JumpI BigDiv
+RetPos,     Load Div_Quot
+            JumpI BigDiv
+
+/ =================================================
+/ VARIABLES
+/ =================================================
+Count,      DEC 0
+One,        DEC 1
+Two,        DEC 2
+Zero,       DEC 0
+Base,       DEC 10000  
+
+/ Inputs
+ValA, DEC 0
+ValB, DEC 0
+ValC, DEC 0
+ValD, DEC 0
+ValE, DEC 0
+ValF, DEC 0
+
+/ Part 2 - New Variables
+Abs_X,    DEC 0  / Absolute Value of solution X
+Sign_X,   DEC 0  / Sign (0=Pos, 1=Neg)
+Abs_Y,    DEC 0
+Sign_Y,   DEC 0
+PrimeCnt, DEC 0  / Prime counter
+P_Val,    DEC 0  / Value to check if prime
+P_Sign,   DEC 0  / Sign of value
+P_Res,    DEC 0  / Prime result
+P_Iter,   DEC 0  / Iterator
+M_Num,    DEC 0  / Numerator Modulo
+M_Den,    DEC 0  / Denominator Modulo
+M_Rem,    DEC 0  / Remainder Modulo
+G_A,      DEC 0  / Variable A for GCD
+G_B,      DEC 0  / Variable B for GCD
+
+/ 32 Bit Variables
+T1_Hi, DEC 0
+T1_Lo, DEC 0
+T1_Sgn, DEC 0
+T2_Hi, DEC 0
+T2_Lo, DEC 0
+T2_Sgn, DEC 0
+D_Sys_H, DEC 0
+D_Sys_L, DEC 0
+D_Sys_S, DEC 0
+D_X_H,   DEC 0
+D_X_L,   DEC 0
+D_X_S,   DEC 0
+D_Y_H,   DEC 0
+D_Y_L,   DEC 0
+D_Y_S,   DEC 0
+M_Op1, DEC 0
+M_Op2, DEC 0
+M_Sign, DEC 0
+Res_Hi, DEC 0
+Res_Lo, DEC 0
+Res_Sgn, DEC 0
+Div_NumH, DEC 0
+Div_NumL, DEC 0
+Div_NumS, DEC 0
+Div_DenH, DEC 0
+Div_DenL, DEC 0
+Div_DenS, DEC 0
+Div_Quot, DEC 0
+Div_FinalS, DEC 0
